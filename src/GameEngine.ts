@@ -36,3 +36,23 @@ export const initializeGameState = (playerCount: number): GameState => {
     board: [], // Board layout will be handled later
   };
 };
+
+/**
+ * Simulates a throw of 5 shells and returns the score based on the rules.
+ * Ashta (8 points): All 5 open OR all 5 closed.
+ * Chamma (4 points): Exactly 4 open.
+ * Others: Number of open shells.
+ * @returns The score (1, 2, 3, 4, or 8).
+ */
+export const throwShells = (): number => {
+  // Let's simulate 5 shells. 1 = open, 0 = closed.
+  const openShells = Array.from({ length: 5 }, () => Math.round(Math.random())).reduce((sum, val) => sum + val, 0);
+
+  if (openShells === 0 || openShells === 5) {
+    return 8; // Ashta
+  }
+  if (openShells === 4) {
+    return 4; // Chamma
+  }
+  return openShells; // 1, 2, or 3
+};

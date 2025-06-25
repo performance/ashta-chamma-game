@@ -1,17 +1,19 @@
 // src/App.tsx
 
 import { useState } from 'react';
+import type { GameState } from './types'; // Use 'import type'
+import { initializeGameState, throwShells } from './GameEngine';
 import { Board } from './components/Board';
 import { PlayerDashboard } from './components/PlayerDashboard';
-import type { GameState } from './types';
-import { initializeGameState } from './GameEngine';
+import { Controls } from './components/Controls';
+import { ShellsDisplay } from './components/ShellsDisplay';
 
-// A mock game state for initial rendering. We will make pawns appear on board later.
+
+// A mock game state for initial rendering.
 const createInitialState = (): GameState => {
-  const state = initializeGameState(4); // Start with 4 players
-  // For testing, let's put one pawn on the board and one as ripe for Player 1
+  const state = initializeGameState(4);
   state.players[0].pawns[0].status = 'on-board';
-  state.players[0].pawns[0].position = 15; // Example position
+  state.players[0].pawns[0].position = 15;
   state.players[0].pawns[1].status = 'ripe';
   return state;
 };
@@ -19,6 +21,16 @@ const createInitialState = (): GameState => {
 
 function App() {
   const [gameState, setGameState] = useState<GameState>(createInitialState());
+  const [rollValue, setRollValue] = useState<number | null>(null);
+
+  const handleThrowShells = () => {
+    const value = throwShells();
+    setRollValue(value);
+    // In the next story, we'll use this value to calculate possible moves.
+  };
+
+  // A player can throw if it's their turn and they haven't rolled yet.
+  const canThrow = rollValue === null;
 
   return (
     <main className="bg-gray-100 min-h-screen w-full flex items-center justify-center p-4">
@@ -35,6 +47,12 @@ function App() {
           <h1 className="text-4xl font-bold text-blue-700">అష్టా చమ్మా</h1>
         </div>
         <Board gameState={gameState} />
+        
+        {/* Game Controls and Display */}
+        <div className="flex items-center space-x-8 mt-6">
+          <ShellsDisplay rollValue={rollValue} />
+          <Controls onThrowShells={handleThrowShells} canThrow={canThrow} />
+        </div>
       </div>
       
       {/* Player Dashboards on the Right */}
