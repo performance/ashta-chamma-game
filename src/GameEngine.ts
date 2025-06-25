@@ -1,6 +1,6 @@
 // src/GameEngine.ts
 
-import { GameState, Player, Pawn } from './types';
+import type { GameState, Player, Pawn } from './types';
 
 // Predefined colors for players
 const PLAYER_COLORS = ['red', 'blue', 'green', 'yellow'];
