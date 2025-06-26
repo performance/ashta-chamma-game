@@ -38,3 +38,18 @@ export const PLAYER_BORDERS: { [key: number]: string } = {
     2: 'border-green-500',
     3: 'border-yellow-400',
 };
+
+// The full path a pawn takes, starting from outside the board (index -1)
+// The path is defined for Player 0. It will be rotated for other players.
+export const MOVEMENT_PATH = [
+  // Outer Ring (Clockwise)
+  3, 4, 5, 6, 13, 20, 27, 34, 41, 40, 39, 38, 31, 24,
+  // This is the "gate" square (index 14 in this path). It's square 17 on the board.
+  17, 10,
+  // Second Ring (Counter-Clockwise)
+  11, 12, 19, 26, 33, 32, 31, 24,
+  // This is the "gate" to the third ring. It's square 25 on the board.
+  25, 18,
+  // Third Ring (Clockwise)
+  19, 20, 21, 22, 23, 24, // End at home square
+];

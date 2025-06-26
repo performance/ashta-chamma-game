@@ -56,3 +56,58 @@ export const throwShells = (): number => {
   }
   return openShells; // 1, 2, or 3
 };
+
+// src/GameEngine.ts లో జోడించండి
+
+import { MOVEMENT_PATH, BOARD_SIZE, TOTAL_SQUARES, START_SQUARES } from './constants';
+import type { Pawn, GameState, Player } from './types'; // import type వాడండి
+
+// Helper function to rotate board index for different players
+const rotateIndex = (index: number, player: number): number => {
+  if (player === 0) return index;
+  const row = Math.floor(index / BOARD_SIZE);
+  const col = index % BOARD_SIZE;
+  let newRow, newCol;
+  switch (player) {
+    case 1: // 90 deg clockwise
+      newRow = col;
+      newCol = BOARD_SIZE - 1 - row;
+      break;
+    case 2: // 180 deg
+      newRow = BOARD_SIZE - 1 - row;
+      newCol = BOARD_SIZE - 1 - col;
+      break;
+    case 3: // 270 deg clockwise (or 90 deg counter-clockwise)
+      newRow = BOARD_SIZE - 1 - col;
+      newCol = row;
+      break;
+    default:
+      return index;
+  }
+  return newRow * BOARD_SIZE + newCol;
+};
+
+export const calculatePossibleMoves = (
+  gameState: GameState,
+  playerId: number,
+  rollValue: number
+): Map<number, number> => { // Returns a map of { pawnId: targetSquareIndex }
+  const possibleMoves = new Map<number, number>();
+  const player = gameState.players[playerId];
+
+  player.pawns.forEach(pawn => {
+    if (pawn.status === 'on-board' && pawn.position !== undefined) {
+      const pathIndex = MOVEMENT_PATH.findIndex(p => rotateIndex(p, playerId) === pawn.position);
+      
+      if (pathIndex !== -1) {
+        const newPathIndex = pathIndex + rollValue;
+        if (newPathIndex < MOVEMENT_PATH.length) {
+          const targetSquare = rotateIndex(MOVEMENT_PATH[newPathIndex], playerId);
+          possibleMoves.set(pawn.id, targetSquare);
+        }
+      }
+    }
+  });
+
+  return possibleMoves;
+};
