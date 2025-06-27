@@ -1,5 +1,7 @@
 // src/GameEngine.ts
-
+// import { MOVEMENT_PATHS } from './constants'; 
+import { CORRECT_MOVEMENT_PATHS } from './constants'; 
+// import type { GameState } from './types';
 import type { GameState, Player, Pawn } from './types';
 
 // Predefined colors for players
@@ -57,52 +59,27 @@ export const throwShells = (): number => {
   return openShells; // 1, 2, or 3
 };
 
-// src/GameEngine.ts లో జోడించండి
-
-import { MOVEMENT_PATH, BOARD_SIZE, TOTAL_SQUARES, START_SQUARES } from './constants';
-import type { Pawn, GameState, Player } from './types'; // import type వాడండి
-
-// Helper function to rotate board index for different players
-const rotateIndex = (index: number, player: number): number => {
-  if (player === 0) return index;
-  const row = Math.floor(index / BOARD_SIZE);
-  const col = index % BOARD_SIZE;
-  let newRow, newCol;
-  switch (player) {
-    case 1: // 90 deg clockwise
-      newRow = col;
-      newCol = BOARD_SIZE - 1 - row;
-      break;
-    case 2: // 180 deg
-      newRow = BOARD_SIZE - 1 - row;
-      newCol = BOARD_SIZE - 1 - col;
-      break;
-    case 3: // 270 deg clockwise (or 90 deg counter-clockwise)
-      newRow = BOARD_SIZE - 1 - col;
-      newCol = row;
-      break;
-    default:
-      return index;
-  }
-  return newRow * BOARD_SIZE + newCol;
-};
 
 export const calculatePossibleMoves = (
   gameState: GameState,
   playerId: number,
   rollValue: number
-): Map<number, number> => { // Returns a map of { pawnId: targetSquareIndex }
+): Map<number, number> => {
   const possibleMoves = new Map<number, number>();
   const player = gameState.players[playerId];
+  // ఇక్కడ కూడా సరైన వేరియబుల్‌ను వాడండి
+  const playerPath = CORRECT_MOVEMENT_PATHS[playerId]; 
+
+  if (!playerPath) return possibleMoves;
 
   player.pawns.forEach(pawn => {
     if (pawn.status === 'on-board' && pawn.position !== undefined) {
-      const pathIndex = MOVEMENT_PATH.findIndex(p => rotateIndex(p, playerId) === pawn.position);
+      const pathIndex = playerPath.indexOf(pawn.position);
       
       if (pathIndex !== -1) {
         const newPathIndex = pathIndex + rollValue;
-        if (newPathIndex < MOVEMENT_PATH.length) {
-          const targetSquare = rotateIndex(MOVEMENT_PATH[newPathIndex], playerId);
+        if (newPathIndex < playerPath.length) {
+          const targetSquare = playerPath[newPathIndex];
           possibleMoves.set(pawn.id, targetSquare);
         }
       }
@@ -110,4 +87,40 @@ export const calculatePossibleMoves = (
   });
 
   return possibleMoves;
+};
+
+/**
+ * Executes a move and returns the new game state.
+ * @param currentState The current state of the game.
+ * @param playerId The ID of the player making the move.
+ * @param pawnId The ID of the pawn being moved.
+ * @param targetSquare The board index where the pawn is moving to.
+ * @returns A new GameState object reflecting the move.
+ */
+export const executeMove = (
+  currentState: GameState,
+  playerId: number,
+  pawnId: number,
+  targetSquare: number
+): GameState => {
+  // Create a deep copy of the state to avoid direct mutation
+  const newState = JSON.parse(JSON.stringify(currentState));
+  
+  const player = newState.players.find(p => p.id === playerId);
+  if (!player) return newState; // Should not happen
+
+  const pawnToMove = player.pawns.find(p => p.id === pawnId);
+  if (!pawnToMove) return newState; // Should not happen
+  
+  // Update the pawn's position
+  pawnToMove.position = targetSquare;
+
+  // TODO: Implement capturing logic here in a future story.
+  // For now, we just move the pawn.
+
+  // After moving, the turn should go to the next player.
+  // TODO: Bonus turn logic will be added later.
+  newState.currentPlayerIndex = (newState.currentPlayerIndex + 1) % newState.players.length;
+
+  return newState;
 };
