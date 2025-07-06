@@ -1,7 +1,5 @@
 // src/GameEngine.ts
-// import { MOVEMENT_PATHS } from './constants'; 
-import { CORRECT_MOVEMENT_PATHS } from './constants'; 
-// import type { GameState } from './types';
+import { CORRECT_MOVEMENT_PATHS, START_SQUARES } from './constants';
 import type { GameState, Player, Pawn } from './types';
 
 // Predefined colors for players
@@ -46,19 +44,35 @@ export const initializeGameState = (playerCount: number): GameState => {
  * Others: Number of open shells.
  * @returns The score (1, 2, 3, 4, or 8).
  */
+// export const throwShells = (): number => {
+//   // Let's simulate 5 shells. 1 = open, 0 = closed.
+//   const openShells = Array.from({ length: 5 }, () => Math.round(Math.random())).reduce((sum, val) => sum + val, 0);
+
+//   if (openShells === 0 || openShells === 5) {
+//     return 8; // Ashta
+//   }
+//   if (openShells === 4) {
+//     return 4; // Chamma
+//   }
+//   return openShells; // 1, 2, or 3
+// };
+
+/**
+ * FOR TESTING: This version has a higher probability of rolling 4 or 8.
+ * REMEMBER TO REVERT THIS LATER.
+ */
 export const throwShells = (): number => {
-  // Let's simulate 5 shells. 1 = open, 0 = closed.
-  const openShells = Array.from({ length: 5 }, () => Math.round(Math.random())).reduce((sum, val) => sum + val, 0);
-
-  if (openShells === 0 || openShells === 5) {
-    return 8; // Ashta
+  const random = Math.random();
+  if (random < 0.4) {
+    return 4; // 40% chance of rolling a 4
+  } else if (random < 0.6) {
+    return 8; // 20% chance of rolling an 8
   }
-  if (openShells === 4) {
-    return 4; // Chamma
-  }
-  return openShells; // 1, 2, or 3
+  
+  // 40% chance for other numbers
+  const openShells = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
+  return openShells;
 };
-
 
 export const calculatePossibleMoves = (
   gameState: GameState,
@@ -67,11 +81,12 @@ export const calculatePossibleMoves = (
 ): Map<number, number> => {
   const possibleMoves = new Map<number, number>();
   const player = gameState.players[playerId];
-  // ఇక్కడ కూడా సరైన వేరియబుల్‌ను వాడండి
-  const playerPath = CORRECT_MOVEMENT_PATHS[playerId]; 
+  const playerPath = CORRECT_MOVEMENT_PATHS[playerId];
+  const startSquare = START_SQUARES[playerId];
 
   if (!playerPath) return possibleMoves;
 
+  // 1. Check for possible moves for pawns already on the board
   player.pawns.forEach(pawn => {
     if (pawn.status === 'on-board' && pawn.position !== undefined) {
       const pathIndex = playerPath.indexOf(pawn.position);
@@ -85,6 +100,21 @@ export const calculatePossibleMoves = (
       }
     }
   });
+
+  // 2. Check for deployment moves if roll is 4 (Chamma) or 8 (Ashta)
+  if (rollValue === 4 || rollValue === 8) {
+    const unDeployedPawn = player.pawns.find(p => p.status === 'un-deployed');
+    if (unDeployedPawn) {
+      // We use a special negative number to signify a deployment move.
+      // The pawnId will be the key, and the target will be its start square.
+      // But to differentiate from a normal move to the start square, we'll handle this uniquely.
+      // Let's use a convention: a move to the start square for an un-deployed pawn is a deployment.
+      // For now, we'll represent this by mapping the un-deployed pawn's ID to the start square.
+      possibleMoves.set(unDeployedPawn.id, startSquare);
+    }
+    // Ashta (8) allows deploying two pawns, but we'll handle that logic later.
+    // For now, one deployment is enough to build the feature.
+  }
 
   return possibleMoves;
 };
@@ -103,24 +133,23 @@ export const executeMove = (
   pawnId: number,
   targetSquare: number
 ): GameState => {
-  // Create a deep copy of the state to avoid direct mutation
   const newState = JSON.parse(JSON.stringify(currentState));
   
   const player = newState.players.find(p => p.id === playerId);
-  if (!player) return newState; // Should not happen
+  if (!player) return newState;
 
   const pawnToMove = player.pawns.find(p => p.id === pawnId);
-  if (!pawnToMove) return newState; // Should not happen
+  if (!pawnToMove) return newState;
   
-  // Update the pawn's position
+  // If the pawn was un-deployed, its status changes to on-board
+  if (pawnToMove.status === 'un-deployed') {
+    pawnToMove.status = 'on-board';
+  }
+
   pawnToMove.position = targetSquare;
 
-  // TODO: Implement capturing logic here in a future story.
-  // For now, we just move the pawn.
+  // TODO: Capturing logic
 
-  // After moving, the turn should go to the next player.
-  // TODO: Bonus turn logic will be added later.
   newState.currentPlayerIndex = (newState.currentPlayerIndex + 1) % newState.players.length;
-
   return newState;
 };
