@@ -9,10 +9,12 @@ interface PlayerDashboardProps {
   player: Player;
   isCurrentPlayer: boolean;
   capturedPawns: { pawn: PawnType; originalPlayerId: number }[]; // చంపిన కాయల కొత్త ప్రాప్
-  onShowPath: (path: number[]) => void; // కొత్త ప్రాప్
+  onShowPath: (path: number[]) => void; 
+  onPawnClick: (playerId: number, pawnId: number) => void; // కాయపై క్లిక్ చేయడానికి కొత్త ప్రాప్
+  possibleMoves: Map<number, number>; // సాధ్యమయ్యే కదలికల ప్రాప్
 }
 
-export const PlayerDashboard = ({ player, isCurrentPlayer, capturedPawns, onShowPath }: PlayerDashboardProps) => {
+export const PlayerDashboard = ({ player, isCurrentPlayer, capturedPawns, onShowPath, onPawnClick, possibleMoves }: PlayerDashboardProps) => {
   const unDeployedPawns = player.pawns.filter(p => p.status === 'un-deployed');
   const ripePawns = player.pawns.filter(p => p.status === 'ripe');
 
@@ -40,13 +42,22 @@ export const PlayerDashboard = ({ player, isCurrentPlayer, capturedPawns, onShow
       </button>
       <div className="space-y-3">
         <div>
-          <h4 className="font-semibold">Un-deployed: {unDeployedPawns.length}</h4>
-          <div className="flex space-x-2 mt-1 h-12 items-center">
-            {unDeployedPawns.map(pawn => (
-              <Pawn key={pawn.id} color={PLAYER_COLORS[player.id]} />
-            ))}
-          </div>
-        </div>
+              <h4 className="font-semibold">Un-deployed: {unDeployedPawns.length}</h4>
+              <div className="flex space-x-2 mt-1 h-12 items-center">
+                {unDeployedPawns.map(pawn => {
+                   const canBeDeployed = isCurrentPlayer && possibleMoves.has(pawn.id);
+                   return (
+                     <div 
+                       key={pawn.id}
+                       className={`transition-all ${canBeDeployed ? 'cursor-pointer ring-4 ring-yellow-400 rounded-full' : ''}`}
+                       onClick={() => canBeDeployed && onPawnClick(player.id, pawn.id)}
+                     >
+                       <Pawn color={PLAYER_COLORS[player.id]} />
+                     </div>
+                   );
+                })}
+              </div>
+            </div>
         <div>
           <h4 className="font-semibold">Ripe (Home): {ripePawns.length}</h4>
           <div className="flex space-x-2 mt-1 h-12 items-center">
